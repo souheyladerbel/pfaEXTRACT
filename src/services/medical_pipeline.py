@@ -5,9 +5,6 @@ import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from pdf2image import convert_from_path
-from pypdf import PdfReader
-
 from src.extraction.medical_analysis_extractor import (
     extract_combined_ocr_text,
     extract_fields_from_medical,
@@ -22,6 +19,52 @@ from src.models.schemas import (
     ReferenceRange,
 )
 from src.services.gemini_llm import analyze_medical_document_gemini
+
+
+def _extract_pdf_text(file_path: Path) -> tuple[str, list[ProcessingWarning]]:
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        return "", [
+            ProcessingWarning(
+                code="PDF_TEXT_READ_UNAVAILABLE",
+                message="Le module 'pypdf' est indisponible ; le texte embarque du PDF sera ignore.",
+                context=str(file_path),
+            )
+        ]
+
+    try:
+        reader = PdfReader(str(file_path))
+        raw_text = "\n".join([(p.extract_text() or "") for p in reader.pages]).strip()
+        return raw_text, []
+    except Exception as exc:
+        return "", [
+            ProcessingWarning(code="PDF_TEXT_READ_FAILED", message=str(exc), context=str(file_path))
+        ]
+
+
+def _render_pdf_first_page(file_path: Path, png_path: Path) -> list[ProcessingWarning]:
+    try:
+        from pdf2image import convert_from_path
+    except ImportError:
+        return [
+            ProcessingWarning(
+                code="PDF_RENDER_UNAVAILABLE",
+                message="Le module 'pdf2image' est indisponible ; impossible de rasteriser ce PDF.",
+                context=str(file_path),
+            )
+        ]
+
+    try:
+        pages = convert_from_path(str(file_path), dpi=200, first_page=1, last_page=1)
+    except Exception as exc:
+        return [ProcessingWarning(code="PDF_RENDER_FAILED", message=str(exc), context=str(file_path))]
+
+    if not pages:
+        return [ProcessingWarning(code="PDF_NO_PAGE", message="Aucune page convertie")]
+
+    pages[0].save(png_path)
+    return []
 
 
 def _to_float(value: Optional[str]) -> Optional[float]:
@@ -209,29 +252,21 @@ def process_medical_file(
         return baseline
 
     if suffix == ".pdf":
-        raw_text = ""
-        try:
-            reader = PdfReader(str(file_path))
-            raw_text = "\n".join([(p.extract_text() or "") for p in reader.pages]).strip()
-        except Exception as exc:
-            warnings.append(
-                ProcessingWarning(code="PDF_TEXT_READ_FAILED", message=str(exc), context=str(file_path))
-            )
+        raw_text, pdf_text_warnings = _extract_pdf_text(file_path)
+        warnings.extend(pdf_text_warnings)
 
         fd, tmp_png = tempfile.mkstemp(suffix=".png")
         os.close(fd)
         png_path = Path(tmp_png)
         try:
-            pages = convert_from_path(str(file_path), dpi=200, first_page=1, last_page=1)
-            if not pages:
+            render_warnings = _render_pdf_first_page(file_path, png_path)
+            if render_warnings:
                 return MedicalDocumentResult(
                     document_metadata=DocumentMetadata(source_file=str(file_path)),
                     raw_text=raw_text or None,
-                    warnings=warnings
-                    + [ProcessingWarning(code="PDF_NO_PAGE", message="Aucune page convertie")],
+                    warnings=warnings + render_warnings,
                     extraction_source="ocr",
                 )
-            pages[0].save(png_path)
 
             ocr_text = extract_combined_ocr_text(png_path)
             if raw_text:

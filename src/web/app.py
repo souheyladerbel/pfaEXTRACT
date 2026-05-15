@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
 from src.config import load_config
 from src.services.extraction_history import list_history_entries
 from src.web.history_views import load_json_file, render_extraction_detail
-from src.web.ui_theme import inject_app_styles, inject_page_theme
+from src.web.ui_theme import get_plotly_template, inject_app_styles, inject_page_theme
 
 _KIND_LABELS_FR = {
     "steg_ocr": "Facture STEG (OCR)",
@@ -137,38 +137,38 @@ def _render_dashboard_header() -> None:
         """
         <style>
         .dash-hero {
-            border: 1px solid rgba(15, 23, 42, 0.10);
-            border-left: 5px solid #2563eb;
-            border-radius: 12px;
-            padding: 14px 16px;
-            background: #ffffff;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            border: 1px solid var(--hx-border);
+            border-left: 5px solid #16a34a;
+            border-radius: 20px;
+            padding: 18px 20px;
+            background: linear-gradient(145deg, rgba(22,163,74,0.10), var(--hx-card));
+            box-shadow: var(--hx-shadow);
             margin-bottom: 0.55rem;
         }
-        .dash-title { font-size: 1.35rem; font-weight: 700; margin: 0; color: #0f172a; }
-        .dash-sub { color: #475569; margin-top: 4px; font-size: 1rem; }
+        .dash-title { font-size: 1.45rem; font-weight: 800; margin: 0; color: var(--hx-text); }
+        .dash-sub { color: var(--hx-muted); margin-top: 4px; font-size: 1rem; }
         .dash-badge {
             display: inline-block; padding: 3px 10px; border-radius: 999px;
             font-size: 0.78rem; font-weight: 600; margin-top: 10px;
-            background: rgba(22, 163, 74, 0.12); color: #166534; border: 1px solid rgba(22, 163, 74, 0.25);
+            background: rgba(22, 163, 74, 0.12); color: var(--hx-text); border: 1px solid rgba(22, 163, 74, 0.25);
         }
         .kpi-card {
-            border-radius: 12px; padding: 12px 14px; border: 1px solid rgba(120,120,120,0.22);
-            min-height: 106px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-radius: 18px; padding: 14px 16px; border: 1px solid var(--hx-border);
+            min-height: 106px; background: linear-gradient(180deg, var(--hx-card), var(--hx-card-2)); box-shadow: var(--hx-shadow);
         }
-        .kpi-top { font-size: 0.9rem; font-weight: 600; color: #2f2f2f; }
+        .kpi-top { font-size: 0.9rem; font-weight: 700; color: var(--hx-text); }
         .kpi-value { font-size: 1.55rem; font-weight: 700; margin-top: 4px; }
-        .kpi-help { margin-top: 3px; font-size: 0.78rem; color: #6b7280; }
+        .kpi-help { margin-top: 3px; font-size: 0.78rem; color: var(--hx-muted); }
         .empty-state {
-            border: 1px dashed rgba(120,120,120,0.35);
-            border-radius: 12px; padding: 22px; text-align: center; color: #5f6368;
+            border: 1px dashed var(--hx-border);
+            border-radius: 16px; padding: 22px; text-align: center; color: var(--hx-muted);
         }
         .result-card {
-            border: 1px solid rgba(120,120,120,0.22);
-            border-radius: 12px;
+            border: 1px solid var(--hx-border);
+            border-radius: 18px;
             padding: 14px;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            background: var(--hx-card);
+            box-shadow: var(--hx-shadow);
             margin-bottom: 10px;
         }
         .value-row {
@@ -179,43 +179,43 @@ def _render_dashboard_header() -> None:
             border-bottom: 1px solid rgba(120,120,120,0.16);
         }
         .value-row:last-child { border-bottom: none; }
-        .value-label { font-weight: 600; color: #1f2937; }
-        .value-data { color: #111827; }
+        .value-label { font-weight: 600; color: var(--hx-text); }
+        .value-data { color: var(--hx-text); }
         .summary-card {
-            border: 1px solid rgba(120,120,120,0.22);
-            border-radius: 12px;
+            border: 1px solid var(--hx-border);
+            border-radius: 18px;
             padding: 10px 12px;
-            background: #ffffff;
+            background: linear-gradient(180deg, var(--hx-card), var(--hx-card-2));
             min-height: 92px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            box-shadow: var(--hx-shadow);
         }
         .summary-label {
             font-size: 0.86rem;
-            color: #6b7280;
+            color: var(--hx-muted);
             margin-bottom: 4px;
             font-weight: 600;
         }
         .summary-value {
             font-size: 1.05rem;
-            color: #111827;
+            color: var(--hx-text);
             font-weight: 700;
             line-height: 1.2rem;
             white-space: normal;
             word-break: break-word;
         }
         .dash-tile {
-            border-radius: 14px;
-            border: 1px solid rgba(120,120,120,0.18);
-            background: linear-gradient(135deg,#ffffff,#f8fbff);
-            box-shadow: 0 10px 20px rgba(15,23,42,0.07);
+            border-radius: 18px;
+            border: 1px solid var(--hx-border);
+            background: linear-gradient(135deg,var(--hx-card),var(--hx-card-2));
+            box-shadow: var(--hx-shadow);
             padding: 12px;
             min-height: 118px;
         }
         </style>
         <div class="dash-hero">
-            <p class="dash-title">Dashboard d'extraction documentaire</p>
-            <div class="dash-sub">Suivi des performances, historique et details des traitements (OCR / Gemini).</div>
-            <span class="dash-badge">Statut: Operationnel</span>
+            <p class="dash-title">Dashboard principal</p>
+            <div class="dash-sub">Vue synthese des traitements, performances OCR / Gemini et activite recente.</div>
+            <span class="dash-badge">Statut: operationnel</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -251,6 +251,7 @@ st.set_page_config(page_title="Dashboard", layout="wide")
 inject_app_styles()
 inject_page_theme("dashboard")
 _render_dashboard_header()
+plotly_template = get_plotly_template()
 st.caption("Pour traiter des documents, utilisez la page `Extraction`.")
 
 cfg = load_config()
@@ -422,7 +423,7 @@ with left:
                 x="date",
                 y="documents",
                 markers=True,
-                template="plotly_white",
+                template=plotly_template,
                 title="Activite par jour",
             )
             fig_day.update_traces(
@@ -455,7 +456,7 @@ with right:
             y="kind_label",
             orientation="h",
             color="kind_label",
-            template="plotly_white",
+            template=plotly_template,
             title="Repartition par type de document",
             labels={"kind_label": "Type", "documents": "Nombre de documents"},
         )
@@ -488,7 +489,7 @@ with a1:
                 z="documents",
                 color_continuous_scale="Blues",
                 title="Heatmap activité / statut",
-                template="plotly_white",
+                template=plotly_template,
             )
             fig_heat.update_layout(height=260, margin=dict(l=20, r=20, t=45, b=35))
             st.plotly_chart(fig_heat, use_container_width=True)
@@ -578,7 +579,7 @@ with viz2a:
             names="statut",
             values="documents",
             hole=0.42,
-            template="plotly_white",
+            template=plotly_template,
             title="Statut des extractions",
             color="statut",
             color_discrete_map={"Succès": "#22c55e", "Erreur": "#f87171"},
@@ -603,7 +604,7 @@ with viz2b:
             x="methode",
             y="documents",
             color="methode",
-            template="plotly_white",
+            template=plotly_template,
             title="Méthode d'extraction",
             labels={"methode": "Méthode", "documents": "Documents"},
             color_discrete_map={"Gemini": "#6366f1", "OCR local": "#0d9488", "Mixte": "#a855f7"},
@@ -633,7 +634,7 @@ with st.container():
                 x="date",
                 y="documents",
                 color="kind_label",
-                template="plotly_white",
+                template=plotly_template,
                 title="Documents par jour",
                 labels={"date": "Date", "documents": "Nombre", "kind_label": "Type"},
             )

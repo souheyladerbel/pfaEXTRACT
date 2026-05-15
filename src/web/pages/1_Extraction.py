@@ -23,6 +23,7 @@ from src.web.extraction_workspace_ui import (
     render_batch_summary,
     render_document_header,
     render_file_queue_cards,
+    render_guided_stepper,
     render_medical_gemini_results,
     render_medical_ocr_results,
     render_pipeline_timeline,
@@ -100,10 +101,9 @@ def _choose_local_folder_dialog(initial_dir: str | None = None) -> tuple[str | N
 
 
 st.set_page_config(page_title="Extraction documents", layout="wide")
-inject_app_styles()
+inject_app_styles(show_theme_toggle=False)
 inject_extraction_workspace_styles(dark=bool(st.session_state.get("hx_dark_mode")))
 inject_page_theme("extraction")
-render_workspace_hero()
 st.sidebar.caption(
     "Extractions enregistrées automatiquement. Consultez **Historiques** dans le menu."
 )
@@ -123,7 +123,29 @@ if "hx_ext_mode_label" not in st.session_state:
 if "hx_ext_method_label" not in st.session_state:
     st.session_state["hx_ext_method_label"] = _METHOD_OPTIONS[0]
 
-with st.sidebar:
+render_workspace_hero(
+    mode_label=st.session_state["hx_ext_mode_label"],
+    extraction_method=st.session_state["hx_ext_method_label"],
+    dark=bool(st.session_state.get("hx_dark_mode")),
+    api_ready=bool(
+        st.session_state.get("hx_gemini_api_input")
+        or cfg.gemini_api_key
+        or os.getenv("GEMINI_API_KEY")
+        or os.getenv("GOOGLE_API_KEY")
+    ),
+)
+config_col, upload_col = st.columns([1.0, 1.65], gap="large")
+
+with config_col:
+    st.markdown("### Etape 2 - Configurer")
+    st.caption(
+        "Choisis le type, la methode et la cle Gemini ici. Le pipeline reste strictement le meme."
+    )
+    st.toggle(
+        "Theme noir",
+        key="hx_dark_mode",
+        help="Bascule l'interface complete entre rendu noir et rendu blanc.",
+    )
     st.markdown('<span style="font-size:11px;font-weight:700;opacity:.85;">Raccourcis pipeline</span>', unsafe_allow_html=True)
     r1, r2, r3 = st.columns(3)
     with r1:
@@ -188,9 +210,14 @@ with st.sidebar:
     api_key = st.text_input(
         "Cle API Gemini",
         value=key_default,
+        key="hx_gemini_api_input",
         type="password",
         help="Obtenir une cle : https://aistudio.google.com/apikey — ou variable GEMINI_API_KEY dans .env",
     )
+    if (api_key or "").strip():
+        st.success("Cle Gemini chargee pour cette session.")
+    else:
+        st.info("Tu peux aussi la mettre de facon permanente dans `.env` avec `GEMINI_API_KEY=...`.")
     model = st.text_input(
         "Modele",
         value=cfg.gemini_model,
@@ -202,15 +229,22 @@ with st.sidebar:
         "Sans cle Gemini : echec pour l'analyse medicale, la facture STEG, la facture fournisseur et le ticket."
     )
 
-render_upload_section_title()
-st.markdown('<div class="hx-xp-upload-shell hx-fade-in"><div class="hx-xp-upload-shell-inner">', unsafe_allow_html=True)
-uploaded_files = st.file_uploader(
+with upload_col:
+    render_upload_section_title()
+upload_col.markdown(
+    '<div class="hx-guided-note"><b>Ou mettre la cle Gemini ?</b><br/>'
+    "Tu peux la coller dans le panneau de configuration pour cette session, ou la stocker dans "
+    "<code>.env</code> avec <code>GEMINI_API_KEY=...</code>.</div>",
+    unsafe_allow_html=True,
+)
+upload_col.markdown('<div class="hx-xp-upload-shell hx-fade-in"><div class="hx-xp-upload-shell-inner">', unsafe_allow_html=True)
+uploaded_files = upload_col.file_uploader(
     "Glissez vos documents ici ou cliquez pour parcourir",
     type=["jpg", "jpeg", "png", "tif", "tiff", "pdf"],
     accept_multiple_files=True,
     label_visibility="visible",
 )
-action_left, action_right = st.columns([4.0, 1.2], vertical_alignment="center")
+action_left, action_right = upload_col.columns([4.0, 1.2], vertical_alignment="center")
 with action_left:
     st.caption("Astuce : images nettes et bien cadrées pour de meilleurs résultats OCR / vision.")
 with action_right:
@@ -220,7 +254,7 @@ with action_right:
         use_container_width=True,
         help="Importer tous les fichiers compatibles d'un dossier (traitement en mode Auto).",
     )
-st.markdown("</div></div>", unsafe_allow_html=True)
+upload_col.markdown("</div></div>", unsafe_allow_html=True)
 
 allowed_exts = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".pdf"}
 docs_to_process: list[dict[str, bytes | str]] = []
@@ -259,6 +293,11 @@ if process_folder:
             st.warning(f"{failed} fichier(s) ignore(s) (lecture impossible).")
         if added == 0:
             st.info("Aucun fichier compatible trouve dans ce dossier.")
+
+render_guided_stepper(
+    docs_count=len(docs_to_process),
+    config_ready=bool(use_local_ocr or (api_key or "").strip() or cfg.gemini_api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")),
+)
 
 if docs_to_process:
     st.markdown(

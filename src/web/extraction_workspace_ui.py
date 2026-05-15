@@ -24,8 +24,8 @@ _EXTRACTION_CSS_STRUCTURE = """
     padding:28px 28px 22px;
     margin-bottom:20px;
     background:linear-gradient(135deg,
-        rgba(99,102,241,0.14) 0%,
-        rgba(139,92,246,0.10) 45%,
+        rgba(34,197,94,0.14) 0%,
+        rgba(16,185,129,0.10) 45%,
         rgba(255,255,255,0.06) 100%);
     border:1px solid var(--hx-w-border);
     box-shadow:0 20px 50px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.45);
@@ -56,7 +56,7 @@ _EXTRACTION_CSS_STRUCTURE = """
     display:inline-flex;align-items:center;justify-content:center;
     background:linear-gradient(135deg,var(--hx-w-accent),var(--hx-w-accent2));
     color:#fff;font-size:20px;
-    box-shadow:0 10px 28px rgba(99,102,241,0.35);
+    box-shadow:0 10px 28px rgba(22,163,74,0.35);
 }
 .hx-xp-sub{ color:var(--hx-w-muted); font-size:0.98rem; max-width:720px; line-height:1.55; margin:0; }
 .hx-xp-badges{ margin-top:18px; display:flex; flex-wrap:wrap; gap:8px; }
@@ -69,17 +69,109 @@ _EXTRACTION_CSS_STRUCTURE = """
     transition:transform .2s ease, box-shadow .2s ease;
 }
 .hx-xp-badge--on{
-    background:linear-gradient(90deg,rgba(99,102,241,0.15),rgba(139,92,246,0.12));
-    border-color:rgba(99,102,241,0.35);
+    background:linear-gradient(90deg,rgba(34,197,94,0.15),rgba(16,185,129,0.12));
+    border-color:rgba(34,197,94,0.35);
     color:var(--hx-w-text);
-    box-shadow:0 0 20px rgba(99,102,241,0.15);
+    box-shadow:0 0 20px rgba(22,163,74,0.15);
+}
+.hx-xp-hero-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:12px;
+    margin-top:18px;
+}
+.hx-xp-hero-stat{
+    border-radius:16px;
+    border:1px solid var(--hx-w-border);
+    background:linear-gradient(180deg,var(--hx-w-card2),var(--hx-w-card));
+    padding:14px 16px;
+}
+.hx-xp-hero-stat label{
+    display:block;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--hx-w-muted);
+    font-weight:700;
+    margin-bottom:6px;
+}
+.hx-xp-hero-stat .val{
+    font-size:1.08rem;
+    font-weight:800;
+    color:var(--hx-w-text);
+}
+.hx-xp-hero-stat .sub{
+    margin-top:4px;
+    font-size:12px;
+    color:var(--hx-w-muted);
+}
+
+/* Guided stepper */
+.hx-xp-guide{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+    margin:0 0 18px;
+}
+@media(max-width:900px){
+    .hx-xp-guide{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+@media(max-width:560px){
+    .hx-xp-guide{
+        grid-template-columns:1fr;
+    }
+}
+.hx-xp-guide-step{
+    border-radius:16px;
+    border:1px solid var(--hx-w-border);
+    background:var(--hx-w-card);
+    padding:14px 16px;
+    box-shadow:0 12px 26px rgba(15,23,42,0.08);
+}
+.hx-xp-guide-step .idx{
+    width:28px;height:28px;border-radius:999px;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;
+    margin-bottom:10px;
+    background:rgba(148,163,184,0.18);
+    color:var(--hx-w-text);
+}
+.hx-xp-guide-step h4{
+    margin:0;
+    font-size:0.98rem;
+    font-weight:800;
+    color:var(--hx-w-text);
+}
+.hx-xp-guide-step p{
+    margin:6px 0 0;
+    font-size:0.84rem;
+    color:var(--hx-w-muted);
+    line-height:1.5;
+}
+.hx-xp-guide-step--done{
+    border-color:rgba(16,185,129,0.35);
+    background:linear-gradient(180deg,rgba(16,185,129,0.08),var(--hx-w-card));
+}
+.hx-xp-guide-step--done .idx{
+    background:rgba(16,185,129,0.18);
+    color:var(--hx-w-success);
+}
+.hx-xp-guide-step--active{
+    border-color:rgba(34,197,94,0.35);
+    box-shadow:0 0 0 3px rgba(34,197,94,0.08), 0 14px 28px rgba(15,23,42,0.08);
+}
+ .hx-xp-guide-step--active .idx{
+    background:linear-gradient(135deg,var(--hx-w-accent),var(--hx-w-accent2));
+    color:#fff;
 }
 
 /* Upload zone */
 .hx-xp-upload-shell{
     border-radius:20px;
     padding:4px;
-    background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(139,92,246,0.15),rgba(59,130,246,0.12));
+    background:linear-gradient(135deg,rgba(34,197,94,0.22),rgba(16,185,129,0.14),rgba(21,128,61,0.10));
     margin-bottom:16px;
 }
 .hx-xp-upload-shell-inner{
@@ -94,7 +186,7 @@ div[data-testid="stFileUploader"]{
     padding:4px 4px 8px !important;
 }
 div[data-testid="stFileUploader"] section{
-    border:2px dashed rgba(99,102,241,0.35) !important;
+    border:2px dashed rgba(34,197,94,0.35) !important;
     border-radius:16px !important;
     background:var(--hx-w-card2) !important;
     min-height:168px !important;
@@ -102,7 +194,7 @@ div[data-testid="stFileUploader"] section{
 }
 div[data-testid="stFileUploader"] section:hover{
     border-color:var(--hx-w-accent) !important;
-    box-shadow:0 0 0 4px rgba(99,102,241,0.12), 0 18px 40px rgba(99,102,241,0.12) !important;
+    box-shadow:0 0 0 4px rgba(34,197,94,0.12), 0 18px 40px rgba(34,197,94,0.12) !important;
 }
 div[data-testid="stFileUploaderDropzoneInstructions"] > div:first-child{
     visibility:hidden !important; height:0 !important; position:relative !important;
@@ -168,7 +260,7 @@ div[data-testid="stFileUploaderDropzoneInstructions"] small::after{
 }
 .hx-xp-ficon{
     width:40px;height:40px;border-radius:12px;
-    background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.15));
+    background:linear-gradient(135deg,rgba(34,197,94,0.2),rgba(16,185,129,0.15));
     display:flex;align-items:center;justify-content:center;font-size:18px;
     flex-shrink:0;
 }
@@ -203,8 +295,8 @@ div[data-testid="stFileUploaderDropzoneInstructions"] small::after{
 .hx-xp-pstep--pending{ opacity:.45; color:var(--hx-w-muted); background:rgba(148,163,184,0.08); }
 .hx-xp-pstep--processing{
     color:var(--hx-w-accent);
-    border-color:rgba(99,102,241,0.35);
-    box-shadow:0 0 24px rgba(99,102,241,0.2);
+    border-color:rgba(34,197,94,0.35);
+    box-shadow:0 0 24px rgba(34,197,94,0.2);
     animation:hxPulse 1.4s ease-in-out infinite;
 }
 .hx-xp-pstep--success{
@@ -221,8 +313,8 @@ div[data-testid="stFileUploaderDropzoneInstructions"] small::after{
     font-style:italic;
 }
 @keyframes hxPulse{
-    0%,100%{ box-shadow:0 0 12px rgba(99,102,241,0.15); }
-    50%{ box-shadow:0 0 28px rgba(99,102,241,0.35); }
+    0%,100%{ box-shadow:0 0 12px rgba(34,197,94,0.15); }
+    50%{ box-shadow:0 0 28px rgba(34,197,94,0.35); }
 }
 .hx-xp-parrow{ color:var(--hx-w-muted); font-size:14px; opacity:.5; }
 
@@ -262,7 +354,7 @@ div[data-testid="stFileUploaderDropzoneInstructions"] small::after{
 }
 .hx-xp-kpi .badge{
     margin-top:8px;display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;
-    background:rgba(99,102,241,0.12);color:var(--hx-w-accent);border:1px solid rgba(99,102,241,0.25);
+    background:rgba(34,197,94,0.12);color:var(--hx-w-accent);border:1px solid rgba(34,197,94,0.25);
 }
 
 /* Party grid */
@@ -295,7 +387,7 @@ div[data-testid="stFileUploaderDropzoneInstructions"] small::after{
 .hx-xp-fin{
     border-radius:18px;
     border:1px solid var(--hx-w-border);
-    background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06));
+    background:linear-gradient(135deg,rgba(34,197,94,0.08),rgba(16,185,129,0.06));
     padding:20px 22px;
     display:grid;
     grid-template-columns:1fr auto;
@@ -392,9 +484,9 @@ _EXTRACTION_CSS_LIGHT_VARS = """
     --hx-w-border:rgba(99,102,241,0.18);
     --hx-w-text:#0f172a;
     --hx-w-muted:#64748b;
-    --hx-w-accent:#6366f1;
-    --hx-w-accent2:#8b5cf6;
-    --hx-w-glow:rgba(99,102,241,0.35);
+    --hx-w-accent:#16a34a;
+    --hx-w-accent2:#10b981;
+    --hx-w-glow:rgba(34,197,94,0.35);
     --hx-w-success:#10b981;
     --hx-w-danger:#ef4444;
 }
@@ -408,19 +500,19 @@ _EXTRACTION_CSS_DARK_VARS = """
     --hx-w-surface:rgba(17,24,39,0.88);
     --hx-w-card:#111827;
     --hx-w-card2:#0f172a;
-    --hx-w-border:rgba(99,102,241,0.28);
+    --hx-w-border:rgba(34,197,94,0.22);
     --hx-w-text:#f1f5f9;
     --hx-w-muted:#94a3b8;
-    --hx-w-accent:#818cf8;
-    --hx-w-accent2:#a78bfa;
-    --hx-w-glow:rgba(129,140,248,0.45);
+    --hx-w-accent:#4ade80;
+    --hx-w-accent2:#22c55e;
+    --hx-w-glow:rgba(74,222,128,0.45);
     --hx-w-success:#34d399;
     --hx-w-danger:#f87171;
 }
 .hx-xp-hero{
     background:linear-gradient(135deg,
-        rgba(99,102,241,0.22) 0%,
-        rgba(139,92,246,0.12) 40%,
+        rgba(34,197,94,0.20) 0%,
+        rgba(16,185,129,0.12) 40%,
         rgba(15,23,42,0.4) 100%) !important;
     box-shadow:0 24px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06) !important;
 }
@@ -440,24 +532,55 @@ def inject_extraction_workspace_styles(*, dark: bool) -> None:
     st.markdown(_EXTRACTION_CSS_DARK_VARS if dark else _EXTRACTION_CSS_LIGHT_VARS, unsafe_allow_html=True)
 
 
-def render_workspace_hero() -> None:
+def render_workspace_hero(
+    *,
+    mode_label: str,
+    extraction_method: str,
+    dark: bool,
+    api_ready: bool,
+) -> None:
+    method_text = "Gemini API" if extraction_method.startswith("Gemini") else "OCR local"
+    theme_text = "Noir" if dark else "Blanc"
+    api_text = "Configuree" if api_ready else "A renseigner"
     st.markdown(
-        """
+        f"""
 <div class="hx-xp-hero hx-fade-in">
   <div class="hx-xp-hero-inner">
     <h1 class="hx-xp-title">
       <span class="hx-xp-title-icon">⚡</span>
-      AI Document Extraction Workspace
+      Espace d'extraction intelligent
     </h1>
     <p class="hx-xp-sub">
-      Analyse intelligente de documents avec OCR, IA et structuration automatique.
+      Meme pipeline metier, nouvelle interface guidee. Importez, configurez Gemini ou OCR,
+      puis consultez les resultats dans une vue plus claire.
     </p>
     <div class="hx-xp-badges">
-      <span class="hx-xp-badge hx-xp-badge--on">Upload</span>
-      <span class="hx-xp-badge hx-xp-badge--on">OCR</span>
-      <span class="hx-xp-badge hx-xp-badge--on">AI Extraction</span>
-      <span class="hx-xp-badge hx-xp-badge--on">Structuring</span>
-      <span class="hx-xp-badge hx-xp-badge--on">Validation</span>
+      <span class="hx-xp-badge hx-xp-badge--on">Import guide</span>
+      <span class="hx-xp-badge hx-xp-badge--on">Gemini / OCR</span>
+      <span class="hx-xp-badge hx-xp-badge--on">Resultats structures</span>
+      <span class="hx-xp-badge hx-xp-badge--on">Theme noir / blanc</span>
+    </div>
+    <div class="hx-xp-hero-grid">
+      <div class="hx-xp-hero-stat">
+        <label>Mode actif</label>
+        <div class="val">{html.escape(mode_label)}</div>
+        <div class="sub">Type de document choisi</div>
+      </div>
+      <div class="hx-xp-hero-stat">
+        <label>Moteur</label>
+        <div class="val">{html.escape(method_text)}</div>
+        <div class="sub">Pipeline de traitement courant</div>
+      </div>
+      <div class="hx-xp-hero-stat">
+        <label>Theme</label>
+        <div class="val">{theme_text}</div>
+        <div class="sub">Basculable a tout moment</div>
+      </div>
+      <div class="hx-xp-hero-stat">
+        <label>Gemini API</label>
+        <div class="val">{api_text}</div>
+        <div class="sub">Cle session ou variable .env</div>
+      </div>
     </div>
   </div>
 </div>
@@ -466,8 +589,36 @@ def render_workspace_hero() -> None:
     )
 
 
+def render_guided_stepper(*, docs_count: int, config_ready: bool) -> None:
+    steps = [
+        ("1", "Importer", "Chargez un ou plusieurs documents"),
+        ("2", "Configurer", "Choisissez le theme, le mode et Gemini"),
+        ("3", "Traiter", "Le pipeline existant reste inchange"),
+        ("4", "Resultats", "Visualisez les sorties et exports"),
+    ]
+    active_idx = 0
+    if docs_count > 0:
+        active_idx = 2 if config_ready else 1
+    elif config_ready:
+        active_idx = 1
+
+    chunks = ['<div class="hx-xp-guide hx-fade-in">']
+    for idx, (num, title, desc) in enumerate(steps):
+        cls = "hx-xp-guide-step"
+        if idx < active_idx:
+            cls += " hx-xp-guide-step--done"
+        elif idx == active_idx:
+            cls += " hx-xp-guide-step--active"
+        chunks.append(
+            f'<div class="{cls}"><span class="idx">{num}</span>'
+            f"<h4>{html.escape(title)}</h4><p>{html.escape(desc)}</p></div>"
+        )
+    chunks.append("</div>")
+    st.markdown("".join(chunks), unsafe_allow_html=True)
+
+
 def render_upload_section_title() -> None:
-    st.markdown('<p class="hx-xp-section-title">Importer des documents</p>', unsafe_allow_html=True)
+    st.markdown('<p class="hx-xp-section-title">Etape 1 - Importer des documents</p>', unsafe_allow_html=True)
 
 
 def render_file_queue_cards(docs: list[dict[str, Any]]) -> None:
@@ -1085,6 +1236,7 @@ def render_batch_summary(batch_rows: list[dict[str, Any]], *, ok_count: int, err
 __all__ = [
     "inject_extraction_workspace_styles",
     "render_workspace_hero",
+    "render_guided_stepper",
     "render_upload_section_title",
     "render_file_queue_cards",
     "render_pipeline_timeline",
