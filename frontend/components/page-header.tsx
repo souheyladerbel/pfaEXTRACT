@@ -11,17 +11,14 @@ type PageHeaderProps = {
 };
 
 export function PageHeader({
-  eyebrow,
+  eyebrow: _eyebrow,
   title,
   description,
   chips = [],
   action
 }: PageHeaderProps) {
   return (
-    <div className="space-y-3">
-      <div className="text-[13px] font-bold tracking-tight text-[#5c49f7] dark:text-[#b5a7ff]">
-        {eyebrow}
-      </div>
+    <div className="space-y-2">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-4xl">
           <h1 className="proto-title text-[28px] font-bold leading-tight tracking-tight text-[#1b2440] dark:text-white md:text-[30px]">

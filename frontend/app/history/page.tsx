@@ -4,7 +4,6 @@ import { CalendarDays, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
-import { ResultDetail } from "@/components/result-detail";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -215,7 +214,6 @@ export default function HistoryPage() {
         </div>
       </Card>
 
-      <ResultDetail detail={detail} />
     </div>
   );
 }

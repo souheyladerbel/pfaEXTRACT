@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, FileSearch } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -50,9 +51,9 @@ export function ResultsPageClient() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="3. RESULTAT D'EXTRACTION (Detail)"
-        title={detail?.sourceFilename ?? "Resultat d'extraction"}
-        description="Analyse medicale OCR - verification detaillee du document, des donnees extraites et du JSON."
+        eyebrow="3. DETAIL DU DOCUMENT"
+        title={detail?.sourceFilename ?? "Detail du document"}
+        description="Cette page montre un document traite, les champs extraits automatiquement et le JSON technique genere par l'extraction."
       />
 
       {error ? (
@@ -62,19 +63,21 @@ export function ResultsPageClient() {
           {detail ? (
             <Card className="space-y-4">
               <div className="flex items-center justify-between text-[12px]">
-                <span className="font-semibold text-[#6f5df6]">Retour aux extractions</span>
+                <Link href="/documents" className="font-semibold text-[#6f5df6]">
+                  Retour aux documents
+                </Link>
                 <div className="flex flex-wrap gap-2">
                   <a href={resolveApiUrl(detail.reportUrl)} target="_blank" rel="noreferrer">
                     <Button variant="secondary" size="sm" className="gap-2">
                       <Download className="h-4 w-4" />
-                      Exporter
+                      Rapport PDF
                     </Button>
                   </a>
                   {detail.sourceAvailable ? (
                     <a href={resolveApiUrl(detail.sourceUrl)} target="_blank" rel="noreferrer">
                       <Button size="sm" className="gap-2">
                         <FileSearch className="h-4 w-4" />
-                        Telecharger
+                        Fichier source
                       </Button>
                     </a>
                   ) : null}
@@ -93,11 +96,27 @@ export function ResultsPageClient() {
                   {detail.status === "ok" ? "Succes" : "Erreur"}
                 </Badge>
               </div>
-              <div className="flex flex-wrap gap-6 border-b border-[rgba(139,147,172,0.14)] pb-3 text-[12px] font-semibold text-[#7b84a0] dark:border-white/10 dark:text-[#b1bcda]">
-                <span className="text-[#2eb764]">Resume</span>
-                <span>Donnees extraites</span>
-                <span>JSON</span>
-                <span>Document original</span>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-[16px] border border-[rgba(139,147,172,0.14)] bg-[#fbfcff] px-4 py-3 text-[12px] dark:border-white/10 dark:bg-[#0f1525]">
+                  <div className="font-semibold text-[#8d95ae]">Type detecte</div>
+                  <div className="mt-1 text-[#1b2440] dark:text-white">{detail.kindLabel}</div>
+                </div>
+                <div className="rounded-[16px] border border-[rgba(139,147,172,0.14)] bg-[#fbfcff] px-4 py-3 text-[12px] dark:border-white/10 dark:bg-[#0f1525]">
+                  <div className="font-semibold text-[#8d95ae]">Methode utilisee</div>
+                  <div className="mt-1 text-[#1b2440] dark:text-white">{detail.method}</div>
+                </div>
+                <div className="rounded-[16px] border border-[rgba(139,147,172,0.14)] bg-[#fbfcff] px-4 py-3 text-[12px] dark:border-white/10 dark:bg-[#0f1525]">
+                  <div className="font-semibold text-[#8d95ae]">Date d'extraction</div>
+                  <div className="mt-1 text-[#1b2440] dark:text-white">{detail.savedDate ?? "Date inconnue"}</div>
+                </div>
+              </div>
+
+              <div className="rounded-[16px] border border-[rgba(139,147,172,0.14)] bg-[#fbfcff] px-4 py-3 text-[12px] text-[#66708e] dark:border-white/10 dark:bg-[#0f1525] dark:text-[#b1bcda]">
+                <div className="font-semibold text-[#1b2440] dark:text-white">Que contient cette page ?</div>
+                <div className="mt-2">Document original : le fichier envoye ou son apercu.</div>
+                <div className="mt-1">Champs extraits : les informations lues automatiquement par le systeme.</div>
+                <div className="mt-1">JSON technique : la structure complete generee pour export ou traitement.</div>
               </div>
             </Card>
           ) : null}

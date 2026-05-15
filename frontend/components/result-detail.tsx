@@ -44,20 +44,22 @@ function flattenPayload(payload: Record<string, unknown>, prefix = "") {
 }
 
 export function ResultDetail({
-  detail
+  detail,
+  layout = "full",
 }: {
   detail: HistoryDetail | null;
+  layout?: "full" | "stacked";
 }) {
   if (!detail) {
     return (
       <Card className="flex min-h-[360px] items-center justify-center">
         <div className="max-w-md text-center">
           <div className="proto-title text-xl font-bold text-[#1b2440] dark:text-white">
-            Aucun resultat a afficher
+            Aucun document selectionne
           </div>
           <p className="mt-3 text-sm leading-6 text-[#7a83a2] dark:text-[#96a1c2]">
-            Lance une extraction ou selectionne une entree d&apos;historique pour voir le
-            document, les champs extraits et le JSON.
+            Lance une extraction ou ouvre le detail d&apos;un document depuis Documents ou
+            Historiques pour voir le fichier, les champs extraits et le JSON technique.
           </p>
         </div>
       </Card>
@@ -68,9 +70,10 @@ export function ResultDetail({
   const sourceSuffix = detail.sourceFilename.split(".").pop()?.toLowerCase() ?? "";
   const previewUrl = detail.sourceAvailable ? resolveApiUrl(detail.sourceUrl) : null;
   const isImage = ["jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"].includes(sourceSuffix);
+  const stackedLayout = layout === "stacked";
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.05fr,0.95fr,0.7fr]">
+    <div className={stackedLayout ? "space-y-4" : "grid gap-4 xl:grid-cols-[1.05fr,0.95fr,0.7fr]"}>
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="proto-title text-[14px] font-bold text-[#1b2440] dark:text-white">
@@ -87,17 +90,17 @@ export function ResultDetail({
               <img
                 src={previewUrl}
                 alt={detail.sourceFilename}
-                className="h-[500px] w-full object-contain"
+                className={stackedLayout ? "h-[320px] w-full object-contain" : "h-[500px] w-full object-contain"}
               />
             ) : (
               <iframe
                 src={previewUrl}
                 title={detail.sourceFilename}
-                className="h-[500px] w-full bg-white"
+                className={stackedLayout ? "h-[320px] w-full bg-white" : "h-[500px] w-full bg-white"}
               />
             )
           ) : (
-            <div className="flex h-[500px] items-center justify-center text-sm text-[#8d95ae]">
+            <div className={`flex items-center justify-center text-sm text-[#8d95ae] ${stackedLayout ? "h-[320px]" : "h-[500px]"}`}>
               Aucun document source archive.
             </div>
           )}
@@ -107,21 +110,21 @@ export function ResultDetail({
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="proto-title text-[14px] font-bold text-[#1b2440] dark:text-white">
-            Donnees extraites
+            Champs extraits
           </div>
           <Badge tone="purple">{detail.kindLabel}</Badge>
         </div>
-        <div className="max-h-[540px] space-y-2 overflow-auto pr-1">
+        <div className={`${stackedLayout ? "max-h-[360px]" : "max-h-[540px]"} space-y-2 overflow-auto pr-1`}>
           {rows.length ? (
             rows.map((row) => (
               <div
                 key={`${row.label}-${row.value}`}
-                className="grid gap-1 rounded-[16px] border border-[rgba(139,147,172,0.12)] bg-[#fbfcff] px-4 py-3 dark:border-white/10 dark:bg-[#0f1525] md:grid-cols-[150px,1fr]"
+                className="grid gap-2 rounded-[16px] border border-[rgba(139,147,172,0.12)] bg-[#fbfcff] px-4 py-3 dark:border-white/10 dark:bg-[#0f1525] md:grid-cols-[minmax(220px,0.9fr)_minmax(0,1.1fr)]"
               >
-                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8d95ae]">
+                <div className="break-all text-[11px] font-semibold tracking-[0.08em] text-[#8d95ae]">
                   {row.label}
                 </div>
-                <div className="break-words text-[12px] text-[#1b2440] dark:text-white">
+                <div className="min-w-0 break-words text-[12px] leading-6 text-[#1b2440] dark:text-white">
                   {row.value}
                 </div>
               </div>
@@ -134,9 +137,9 @@ export function ResultDetail({
 
       <Card className="p-4">
         <div className="mb-3 proto-title text-[14px] font-bold text-[#1b2440] dark:text-white">
-          JSON
+          JSON technique
         </div>
-        <pre className="max-h-[540px] overflow-auto rounded-[18px] bg-[#111827] p-4 text-[11px] leading-5 text-[#98f5b7]">
+        <pre className={`${stackedLayout ? "max-h-[260px]" : "max-h-[540px]"} overflow-auto rounded-[18px] bg-[#111827] p-4 text-[11px] leading-5 text-[#98f5b7]`}>
           {JSON.stringify(detail.payload, null, 2)}
         </pre>
       </Card>

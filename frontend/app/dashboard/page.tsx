@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, CalendarDays, Plus, ShieldAlert, Sparkles, Trophy, WalletCards, Workflow } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CalendarDays, Plus, ShieldAlert, Sparkles, Trophy, WalletCards, Workflow } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { DonutChart, SimpleBars, TrendLineChart } from "@/components/charts";
 import { PageHeader } from "@/components/page-header";
@@ -20,8 +21,18 @@ function scoreLabel(score: number | null) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [error, setError] = useState("");
+  const todayLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat("fr-FR", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date()),
+    []
+  );
 
   useEffect(() => {
     fetchDashboard()
@@ -41,12 +52,9 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex h-10 items-center gap-2 rounded-xl border border-[rgba(139,147,172,0.2)] bg-white px-3 text-sm text-[#1b2440] dark:border-white/10 dark:bg-[#0f1525] dark:text-white">
               <CalendarDays className="h-4 w-4 text-[#7c4dff]" />
-              8 avr. 2026 - 10 mai 2026
+              {todayLabel}
             </div>
-            <Button variant="secondary" size="icon">
-              <Bell className="h-4 w-4" />
-            </Button>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => router.push("/extractions")}>
               <Plus className="h-4 w-4" />
               Nouvelle extraction
             </Button>
@@ -104,7 +112,7 @@ export default function DashboardPage() {
                 <div className="proto-title text-[15px] font-bold text-[#1b2440] dark:text-white">
                   Activite recente
                 </div>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => router.push("/documents")}>
                   Voir tous les documents
                 </Button>
               </div>

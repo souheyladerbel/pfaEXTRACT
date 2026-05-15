@@ -1,7 +1,13 @@
 export const storageKeys = {
   theme: "docuai-theme",
+  uiSettings: "docuai-ui-settings",
   geminiKey: "docuai-gemini-key",
   geminiModel: "docuai-gemini-model",
+  aiProvider: "docuai-ai-provider",
+  openaiKey: "docuai-openai-key",
+  openaiModel: "docuai-openai-model",
+  anthropicKey: "docuai-anthropic-key",
+  anthropicModel: "docuai-anthropic-model",
   lastExtraction: "docuai-last-extraction",
   activeModels: "docuai-active-models",
   defaultMethod: "docuai-default-method"

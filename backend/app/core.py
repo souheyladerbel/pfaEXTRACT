@@ -738,10 +738,8 @@ def build_meta_payload(cfg: AppConfig) -> dict[str, Any]:
             {"href": "/dashboard", "label": "Tableau de bord"},
             {"href": "/documents", "label": "Documents"},
             {"href": "/extractions", "label": "Extractions"},
-            {"href": "/results", "label": "Resultats"},
             {"href": "/history", "label": "Historiques"},
             {"href": "/analyses", "label": "Analyses"},
-            {"href": "/models", "label": "Modeles IA"},
             {"href": "/settings", "label": "Parametres"},
         ],
     }

@@ -4,13 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Bell,
-  ClipboardCheck,
   FileText,
   FolderKanban,
   History,
   LayoutDashboard,
-  Microscope,
   Search,
   Settings,
   Sparkles,
@@ -25,10 +22,8 @@ const navigation = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/documents", label: "Documents", icon: FolderKanban },
   { href: "/extractions", label: "Extractions", icon: Sparkles },
-  { href: "/results", label: "Resultats", icon: ClipboardCheck },
   { href: "/history", label: "Historiques", icon: History },
   { href: "/analyses", label: "Analyses", icon: BarChart3 },
-  { href: "/models", label: "Modeles IA", icon: Microscope },
   { href: "/settings", label: "Parametres", icon: Settings }
 ];
 
@@ -126,9 +121,6 @@ export function AppShell({ children }: PropsWithChildren) {
               />
             </div>
             <div className="flex items-center gap-2">
-              <button className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(140,148,170,0.18)] bg-[#fbfcff] text-[#7b849f] dark:border-white/10 dark:bg-[#0f1525] dark:text-[#a9b3d1]">
-                <Bell className="h-4 w-4" />
-              </button>
               <ThemeToggle />
             </div>
           </div>

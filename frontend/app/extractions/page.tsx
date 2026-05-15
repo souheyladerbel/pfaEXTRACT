@@ -13,7 +13,6 @@ import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { fetchMeta, uploadExtractions } from "@/lib/api";
 import {
-  readStoredJson,
   readStoredValue,
   storageKeys,
   writeStoredValue,
@@ -28,27 +27,49 @@ const modeVisuals: Record<string, { title: string; hint: string }> = {
   receipt: { title: "Ticket de caisse", hint: "Recu & ticket" }
 };
 
-function resolveAllowedMethods(meta: MetaPayload, activeModelIds: string[]) {
-  const allowed = new Set<string>();
-  if (activeModelIds.includes("gemini-api") || !activeModelIds.length) {
-    allowed.add("gemini");
-  }
-  if (activeModelIds.includes("ocr-local") || !activeModelIds.length) {
-    allowed.add("ocr");
-  }
-  return meta.methods.filter((item) => allowed.has(item.value));
+const aiProviders = {
+  gemini: {
+    label: "Gemini 2.5 Flash",
+    provider: "Google",
+    keyEnv: "GEMINI_API_KEY",
+    defaultModel: "gemini-2.5-flash",
+    supported: true,
+    note: "Supporte l'extraction reelle dans cette version.",
+  },
+  openai: {
+    label: "GPT-4o",
+    provider: "OpenAI",
+    keyEnv: "OPENAI_API_KEY",
+    defaultModel: "gpt-4o",
+    supported: false,
+    note: "Interface prete, integration backend bientot.",
+  },
+  anthropic: {
+    label: "Claude 3.5 Sonnet",
+    provider: "Anthropic",
+    keyEnv: "ANTHROPIC_API_KEY",
+    defaultModel: "claude-3-5-sonnet-latest",
+    supported: false,
+    note: "Interface prete, integration backend bientot.",
+  },
+} as const;
+
+type AiProvider = keyof typeof aiProviders;
+
+function resolveAllowedMethods(meta: MetaPayload) {
+  return meta.methods;
 }
 
-function resolveInitialMethod(meta: MetaPayload, activeModelIds: string[]) {
-  const allowedMethods = resolveAllowedMethods(meta, activeModelIds);
-  const stored = readStoredValue(storageKeys.defaultMethod, "");
-  if (stored && allowedMethods.some((item) => item.value === stored)) {
-    return stored;
-  }
-  if (allowedMethods.some((item) => item.value === "gemini")) {
+function resolveInitialMethod(meta: MetaPayload) {
+  const storedProvider = readStoredValue(storageKeys.aiProvider, "gemini");
+  if (storedProvider === "openai" || storedProvider === "anthropic") {
     return "gemini";
   }
-  return allowedMethods[0]?.value ?? "gemini";
+  const stored = readStoredValue(storageKeys.defaultMethod, "");
+  if (stored && resolveAllowedMethods(meta).some((item) => item.value === stored)) {
+    return stored;
+  }
+  return "gemini";
 }
 
 export default function ExtractionsPage() {
@@ -57,30 +78,47 @@ export default function ExtractionsPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [mode, setMode] = useState("auto");
   const [method, setMethod] = useState("gemini");
+  const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [openaiModel, setOpenaiModel] = useState("gpt-4o");
+  const [anthropicApiKey, setAnthropicApiKey] = useState("");
+  const [anthropicModel, setAnthropicModel] = useState("claude-3-5-sonnet-latest");
   const [advanced, setAdvanced] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [result, setResult] = useState<ExtractionBatchPayload | null>(null);
-  const [activeModelIds, setActiveModelIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchMeta().then((payload) => {
-      const storedModels = readStoredJson<string[]>(storageKeys.activeModels, []);
+      const storedProvider = readStoredValue(storageKeys.aiProvider, "gemini");
       setMeta(payload);
-      setActiveModelIds(storedModels);
+      setAiProvider(
+        storedProvider === "openai" || storedProvider === "anthropic" ? storedProvider : "gemini"
+      );
       setGeminiModel(readStoredValue(storageKeys.geminiModel, payload.defaultGeminiModel));
       setGeminiApiKey(readStoredValue(storageKeys.geminiKey, ""));
-      setMethod(resolveInitialMethod(payload, storedModels));
+      setOpenaiModel(readStoredValue(storageKeys.openaiModel, aiProviders.openai.defaultModel));
+      setOpenaiApiKey(readStoredValue(storageKeys.openaiKey, ""));
+      setAnthropicModel(readStoredValue(storageKeys.anthropicModel, aiProviders.anthropic.defaultModel));
+      setAnthropicApiKey(readStoredValue(storageKeys.anthropicKey, ""));
+      setMethod(resolveInitialMethod(payload));
     });
   }, []);
 
   const availableMethods = useMemo(
-    () => (meta ? resolveAllowedMethods(meta, activeModelIds) : []),
-    [activeModelIds, meta]
+    () => (meta ? resolveAllowedMethods(meta) : []),
+    [meta]
   );
+
+  const extractionOptions = [
+    { value: "gemini", label: "Gemini (API)" },
+    { value: "openai", label: "GPT-4o (OpenAI)" },
+    { value: "anthropic", label: "Claude 3.5 Sonnet (Anthropic)" },
+    { value: "ocr", label: "OCR local (sans API)" },
+  ] as const;
 
   useEffect(() => {
     if (!meta) {
@@ -88,7 +126,7 @@ export default function ExtractionsPage() {
     }
 
     if (availableMethods.length && !availableMethods.some((item) => item.value === method)) {
-      const fallback = resolveInitialMethod(meta, activeModelIds);
+      const fallback = resolveInitialMethod(meta);
       setMethod(fallback);
       setInfo("La methode precedente n'est plus active. Extraction a bascule sur le moteur disponible.");
       return;
@@ -97,18 +135,59 @@ export default function ExtractionsPage() {
     if (method === "ocr" && (mode === "receipt" || mode === "supplier")) {
       if (availableMethods.some((item) => item.value === "gemini")) {
         setMethod("gemini");
+        setAiProvider("gemini");
         setInfo("Ticket de caisse et facture fournisseur exigent Gemini. La methode a ete rebasculee automatiquement.");
       } else {
-        setInfo("Ce type de document exige Gemini. Reactive Gemini API dans l'onglet Modeles IA.");
+        setInfo("Ce type de document exige Gemini. Ajoutez votre cle Gemini dans cette page pour continuer.");
       }
       return;
     }
     setInfo(
       mode === "auto" && method === "ocr"
         ? "En mode Auto avec OCR local, les tickets et factures fournisseur ne pourront pas etre extraits."
+        : method === "gemini" && !aiProviders[aiProvider].supported
+          ? `${aiProviders[aiProvider].label} prepare bien les champs API ici, mais ce moteur n'est pas encore connecte au backend. Utilisez Gemini ou OCR pour une extraction immediate.`
         : ""
     );
-  }, [activeModelIds, availableMethods, meta, method, mode]);
+  }, [aiProvider, availableMethods, meta, method, mode]);
+
+  const selectedAiConfig = aiProviders[aiProvider];
+  const selectedApiKey =
+    aiProvider === "gemini"
+      ? geminiApiKey
+      : aiProvider === "openai"
+        ? openaiApiKey
+        : anthropicApiKey;
+  const selectedModelName =
+    aiProvider === "gemini"
+      ? geminiModel
+      : aiProvider === "openai"
+        ? openaiModel
+        : anthropicModel;
+
+  const setSelectedApiKey = (value: string) => {
+    if (aiProvider === "gemini") {
+      setGeminiApiKey(value);
+      return;
+    }
+    if (aiProvider === "openai") {
+      setOpenaiApiKey(value);
+      return;
+    }
+    setAnthropicApiKey(value);
+  };
+
+  const setSelectedModelName = (value: string) => {
+    if (aiProvider === "gemini") {
+      setGeminiModel(value);
+      return;
+    }
+    if (aiProvider === "openai") {
+      setOpenaiModel(value);
+      return;
+    }
+    setAnthropicModel(value);
+  };
 
   const handleFileChange = (selected: FileList | null) => {
     if (!selected) {
@@ -120,6 +199,11 @@ export default function ExtractionsPage() {
   const runExtraction = async () => {
     if (!files.length) {
       setError("Ajoute au moins un document avant de lancer l'extraction.");
+      return;
+    }
+
+    if (method === "gemini" && !selectedAiConfig.supported) {
+      setError(`${selectedAiConfig.label} n'est pas encore connecte au backend. Choisis Gemini ou OCR pour lancer l'extraction maintenant.`);
       return;
     }
 
@@ -147,11 +231,16 @@ export default function ExtractionsPage() {
       const response = await uploadExtractions(form);
       setResult(response);
       writeStoredValue(storageKeys.lastExtraction, JSON.stringify(response));
+      writeStoredValue(storageKeys.aiProvider, aiProvider);
       writeStoredValue(storageKeys.geminiKey, geminiApiKey);
       writeStoredValue(storageKeys.geminiModel, geminiModel);
+      writeStoredValue(storageKeys.openaiKey, openaiApiKey);
+      writeStoredValue(storageKeys.openaiModel, openaiModel);
+      writeStoredValue(storageKeys.anthropicKey, anthropicApiKey);
+      writeStoredValue(storageKeys.anthropicModel, anthropicModel);
       writeStoredValue(storageKeys.defaultMethod, method);
       if (response.latestSuccess?.historyEntryKey) {
-        router.push(`/results?entry=${response.latestSuccess.historyEntryKey}`);
+        router.push(`/documents?entry=${response.latestSuccess.historyEntryKey}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue.");
@@ -267,13 +356,22 @@ export default function ExtractionsPage() {
             <div className="space-y-2">
               <div className="text-[12px] font-semibold text-[#687292]">Methode d'extraction</div>
               <Select
-                value={method}
+                value={method === "ocr" ? "ocr" : aiProvider}
                 onChange={(event) => {
-                  setMethod(event.target.value);
-                  writeStoredValue(storageKeys.defaultMethod, event.target.value);
+                  const nextValue = event.target.value as "gemini" | "openai" | "anthropic" | "ocr";
+                  if (nextValue === "ocr") {
+                    setMethod("ocr");
+                    writeStoredValue(storageKeys.defaultMethod, "ocr");
+                    return;
+                  }
+
+                  setMethod("gemini");
+                  setAiProvider(nextValue);
+                  writeStoredValue(storageKeys.aiProvider, nextValue);
+                  writeStoredValue(storageKeys.defaultMethod, "gemini");
                 }}
               >
-                {availableMethods.map((item) => (
+                {extractionOptions.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
                   </option>
@@ -299,33 +397,63 @@ export default function ExtractionsPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <div className="text-[12px] font-semibold text-[#687292]">Cle Gemini</div>
-              <Input
-                type="password"
-                value={geminiApiKey}
-                onChange={(event) => setGeminiApiKey(event.target.value)}
-                placeholder="GEMINI_API_KEY"
-              />
-              <Input
-                value={geminiModel}
-                onChange={(event) => setGeminiModel(event.target.value)}
-                placeholder="Modele Gemini"
-              />
-            </div>
+            {method !== "ocr" ? (
+              <>
+                <div className="space-y-2">
+                  <div className="text-[12px] font-semibold text-[#687292]">Modele IA</div>
+                  <Select
+                    value={aiProvider}
+                    onChange={(event) => {
+                      const nextProvider = event.target.value as AiProvider;
+                      setAiProvider(nextProvider);
+                      writeStoredValue(storageKeys.aiProvider, nextProvider);
+                    }}
+                  >
+                    <option value="gemini">Gemini 2.5 Flash</option>
+                    <option value="openai">GPT-4o</option>
+                    <option value="anthropic">Claude 3.5 Sonnet</option>
+                  </Select>
+                </div>
 
-            <div className="rounded-[16px] border border-[rgba(139,147,172,0.14)] bg-[#fbfcff] p-3 text-[12px] text-[#6b7594] dark:border-white/10 dark:bg-[#0f1525] dark:text-[#b1bcda]">
-              <div className="mb-1 font-semibold text-[#1b2440] dark:text-white">Ou mettre la cle Gemini ?</div>
-              <div className="mb-2">
-                Modeles actifs :{" "}
-                {activeModelIds.includes("gemini-api") ? "Gemini" : ""}
-                {activeModelIds.includes("gemini-api") && activeModelIds.includes("ocr-local") ? " + " : ""}
-                {activeModelIds.includes("ocr-local") ? "OCR local" : ""}
-                {!activeModelIds.length ? "Configuration par defaut" : ""}
+                <div className="space-y-2">
+                  <div className="text-[12px] font-semibold text-[#687292]">Cle API {selectedAiConfig.provider}</div>
+                  <Input
+                    type="password"
+                    value={selectedApiKey}
+                    onChange={(event) => setSelectedApiKey(event.target.value)}
+                    placeholder={selectedAiConfig.keyEnv}
+                  />
+                  <Input
+                    value={selectedModelName}
+                    onChange={(event) => setSelectedModelName(event.target.value)}
+                    placeholder={selectedAiConfig.defaultModel}
+                  />
+                </div>
+
+                <div className="rounded-[16px] border border-[rgba(139,147,172,0.14)] bg-[#fbfcff] p-3 text-[12px] text-[#6b7594] dark:border-white/10 dark:bg-[#0f1525] dark:text-[#b1bcda]">
+                  <div className="mb-1 font-semibold text-[#1b2440] dark:text-white">
+                    Ou mettre la cle {selectedAiConfig.provider} ?
+                  </div>
+                  <div className="mb-2">Modele choisi : {selectedAiConfig.label}</div>
+                  <div>{selectedAiConfig.supported ? meta?.geminiInstructions.session : "Vous pouvez deja preparer cette cle dans l'interface pour la future integration."}</div>
+                  <div className="mt-2">
+                    {selectedAiConfig.supported
+                      ? meta?.geminiInstructions.server
+                      : `Ajoutez ${selectedAiConfig.keyEnv}=... dans .env quand ce moteur sera connecte au backend.`}
+                  </div>
+                  <div className="mt-2 text-[#7c4dff] dark:text-[#c7b7ff]">
+                    {selectedAiConfig.note}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-[16px] border border-[rgba(139,147,172,0.14)] bg-[#fbfcff] p-3 text-[12px] text-[#6b7594] dark:border-white/10 dark:bg-[#0f1525] dark:text-[#b1bcda]">
+                <div className="mb-1 font-semibold text-[#1b2440] dark:text-white">OCR local actif</div>
+                <div>Aucune cle API n'est necessaire pour ce mode.</div>
+                <div className="mt-2">Le traitement utilisera Tesseract / OCR local directement sur cette machine.</div>
+                <div className="mt-2">Si tu veux afficher les champs IA, choisis `Gemini (API)` dans la methode d'extraction.</div>
               </div>
-              <div>{meta?.geminiInstructions.session}</div>
-              <div className="mt-2">{meta?.geminiInstructions.server}</div>
-            </div>
+            )}
           </Card>
 
           <Card className="space-y-3">

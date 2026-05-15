@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import io
 import json
 import mimetypes
+import zipfile
 from datetime import date
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 
@@ -97,6 +100,38 @@ def history(
         page=page,
         page_size=pageSize,
     )
+
+
+@app.get("/api/history/export/zip")
+def history_export_zip(
+    entryKey: Annotated[list[str], Query(alias="entryKey")] = [],
+) -> Response:
+    if not entryKey:
+        raise HTTPException(status_code=400, detail="Aucune entree selectionnee.")
+
+    cfg = get_config()
+    buffer = io.BytesIO()
+    used_names: dict[str, int] = {}
+
+    with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for index, key in enumerate(entryKey, start=1):
+            entry = find_history_entry(cfg, key)
+            if entry is None:
+                continue
+
+            pdf_bytes = build_report_for_entry(cfg, entry)
+            raw_name = str(entry.get("source_filename") or f"document_{index}")
+            stem = Path(raw_name).stem or f"document_{index}"
+            count = used_names.get(stem, 0)
+            used_names[stem] = count + 1
+            suffix = f"_{count + 1}" if count else ""
+            archive.writestr(f"{stem}{suffix}_rapport.pdf", pdf_bytes)
+
+    buffer.seek(0)
+    headers = {
+        "Content-Disposition": 'attachment; filename="documents_export.zip"'
+    }
+    return Response(content=buffer.getvalue(), media_type="application/zip", headers=headers)
 
 
 @app.get("/api/history/{entry_key}")
