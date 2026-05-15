@@ -17,3 +17,6 @@ streamlit
 plotly
 google-generativeai
 google-genai
+fastapi
+uvicorn
+python-multipart

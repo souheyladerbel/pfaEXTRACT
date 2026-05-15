@@ -45,7 +45,65 @@ Commencer par un premier cas d'usage: **factures STEG** avec un schema simple:
 
 Le fichier `docs/ARCHITECTURE.md` détaille l'architecture cible ; `docs/DOCUMENTATION_PROJET.md` décrit ce qui est réellement implémenté.
 
-## Lancer l'interface web
+## Nouvelle interface web (Next.js + FastAPI)
+
+Le projet contient maintenant une nouvelle interface admin moderne :
+- `backend/` : API `FastAPI` qui reutilise les pipelines Python existants
+- `frontend/` : interface `Next.js` multi-pages (dashboard, extractions, resultats, historiques, analyses, modeles, parametres)
+
+### 1. Lancer le backend FastAPI
+
+Depuis la racine du projet :
+
+```bash
+python -m pip install -r requirements.txt
+uvicorn backend.app.main:app --reload
+```
+
+API disponible sur :
+- `http://127.0.0.1:8000/api/health`
+- ou via `.\run_api.ps1`
+
+### 2. Lancer le frontend Next.js
+
+Depuis `frontend/` :
+
+```bash
+npm install
+npm run dev
+```
+
+Alternative si `npm` est endommage sur Windows :
+
+```bash
+corepack pnpm install
+corepack pnpm dev
+```
+
+Interface disponible sur :
+- `http://localhost:3000`
+- ou via `.\run_frontend.ps1`
+
+Si tu veux un lancement plus stable apres un `git pull` ou beaucoup de changements, utilise :
+
+```bash
+.\run_frontend_stable.ps1
+```
+
+Ce script nettoie `.next`, recompile puis lance le frontend en mode production.
+
+### 3. Cle Gemini
+
+Le meilleur emplacement reste le fichier `.env` a la racine du projet backend :
+
+```env
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+La cle peut aussi etre saisie dans l'interface pour une session navigateur.
+
+## Ancienne interface Streamlit (legacy)
 
 Depuis la racine du projet:
 
