@@ -29,6 +29,7 @@ export default function HistoryPage() {
   const [selectedKey, setSelectedKey] = useState("");
   const [detail, setDetail] = useState<HistoryDetail | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams({
@@ -64,9 +65,10 @@ export default function HistoryPage() {
       return;
     }
     try {
-      await deleteHistoryEntry(selectedKey);
+      const response = await deleteHistoryEntry(selectedKey);
       setSelectedKey("");
       setDetail(null);
+      setNotice(response.message);
       const params = new URLSearchParams({
         page: String(page),
         pageSize: "8",
@@ -126,6 +128,7 @@ export default function HistoryPage() {
         </div>
 
         {error ? <div className="text-sm text-[#df4d64]">{error}</div> : null}
+        {notice ? <div className="text-sm text-[#2eb764]">{notice}</div> : null}
 
         {!list ? (
           <div className="text-sm text-[#7a83a2]">Chargement de l'historique...</div>
@@ -208,7 +211,7 @@ export default function HistoryPage() {
           {detail ? (
             <Button variant="danger" size="sm" onClick={removeCurrentEntry} className="gap-2">
               <Trash2 className="h-4 w-4" />
-              Supprimer
+              Mettre a la corbeille
             </Button>
           ) : null}
         </div>

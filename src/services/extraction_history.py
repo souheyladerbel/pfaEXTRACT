@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,22 @@ def _safe_stem(name: str) -> str:
     stem = re.sub(r"[^\w\-]+", "_", stem, flags=re.UNICODE)
     stem = stem.strip("._") or "document"
     return stem[:80]
+
+
+def _trash_root(cfg: AppConfig) -> Path:
+    return cfg.extraction_history_dir.parent / "trash"
+
+
+def _unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+
+    counter = 2
+    while True:
+        candidate = path.with_name(f"{path.stem}_{counter}{path.suffix}")
+        if not candidate.exists():
+            return candidate
+        counter += 1
 
 
 def save_extraction(
@@ -87,7 +104,7 @@ def save_extraction(
 
 
 def list_history_entries(cfg: AppConfig) -> list[dict[str, Any]]:
-    """Entrées triées par date de fichier (plus récent en premier)."""
+    """Entrees triees par date de fichier (plus recent en premier)."""
     rows: list[dict[str, Any]] = []
     db_path = cfg.extraction_history_db_path
     if db_path.is_file():
@@ -113,22 +130,22 @@ def list_history_entries(cfg: AppConfig) -> list[dict[str, Any]]:
                     ORDER BY datetime(saved_at) DESC, id DESC
                     """
                 ).fetchall()
-            for r in db_rows:
+            for row in db_rows:
                 payload: dict[str, Any] = {}
                 try:
-                    payload = json.loads(r["payload_json"]) if r["payload_json"] else {}
+                    payload = json.loads(row["payload_json"]) if row["payload_json"] else {}
                 except Exception:
                     payload = {}
-                rel = r["relative_path"] or f"db://extraction_history/{r['id']}"
+                relative = row["relative_path"] or f"db://extraction_history/{row['id']}"
                 rows.append(
                     {
-                        "id": r["id"],
+                        "id": row["id"],
                         "path": None,
-                        "relative": rel,
-                        "kind": r["kind"],
-                        "saved_at": r["saved_at"],
-                        "source_filename": r["source_filename"],
-                        "size_bytes": len((r["payload_json"] or "").encode("utf-8")),
+                        "relative": relative,
+                        "kind": row["kind"],
+                        "saved_at": row["saved_at"],
+                        "source_filename": row["source_filename"],
+                        "size_bytes": len((row["payload_json"] or "").encode("utf-8")),
                         "payload": payload,
                         "storage": "db",
                     }
@@ -141,20 +158,21 @@ def list_history_entries(cfg: AppConfig) -> list[dict[str, Any]]:
     root = cfg.extraction_history_dir
     if not root.is_dir():
         return []
-    for p in sorted(root.rglob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
-        rel = p.relative_to(root)
+
+    for path in sorted(root.rglob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+        relative = path.relative_to(root)
         try:
-            data = json.loads(p.read_text(encoding="utf-8"))
+            data = json.loads(path.read_text(encoding="utf-8"))
             meta = data.get("_meta") or {}
             rows.append(
                 {
                     "id": None,
-                    "path": p,
-                    "relative": str(rel),
-                    "kind": meta.get("kind") or p.parent.name,
+                    "path": path,
+                    "relative": str(relative),
+                    "kind": meta.get("kind") or path.parent.name,
                     "saved_at": meta.get("saved_at") or "",
                     "source_filename": meta.get("source_filename") or "",
-                    "size_bytes": p.stat().st_size,
+                    "size_bytes": path.stat().st_size,
                     "payload": data,
                     "storage": "file",
                 }
@@ -163,12 +181,12 @@ def list_history_entries(cfg: AppConfig) -> list[dict[str, Any]]:
             rows.append(
                 {
                     "id": None,
-                    "path": p,
-                    "relative": str(rel),
-                    "kind": p.parent.name,
+                    "path": path,
+                    "relative": str(relative),
+                    "kind": path.parent.name,
                     "saved_at": "",
-                    "source_filename": p.name,
-                    "size_bytes": p.stat().st_size,
+                    "source_filename": path.name,
+                    "size_bytes": path.stat().st_size,
                     "payload": {},
                     "storage": "file",
                 }
@@ -177,10 +195,54 @@ def list_history_entries(cfg: AppConfig) -> list[dict[str, Any]]:
 
 
 def delete_history_entry(cfg: AppConfig, entry: dict[str, Any]) -> tuple[bool, str]:
-    """Supprime une extraction (DB + JSON + source archivée si présente)."""
+    """Deplace une extraction vers la corbeille puis la retire de la liste active."""
     root = cfg.extraction_history_dir
-    rel = str(entry.get("relative") or "")
+    trash_root = _trash_root(cfg)
+    relative = str(entry.get("relative") or "")
     payload = entry.get("payload") if isinstance(entry.get("payload"), dict) else {}
+    source_filename = str(entry.get("source_filename") or "document")
+    kind = str(entry.get("kind") or "autre")
+
+    try:
+        trash_root.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        fallback_name = f"{timestamp}_{_safe_stem(source_filename)}.json"
+        relative_candidate = (
+            Path(relative)
+            if relative and not relative.startswith("db://")
+            else Path(kind) / fallback_name
+        )
+        trash_json_path = _unique_path(trash_root / relative_candidate)
+        trash_json_path.parent.mkdir(parents=True, exist_ok=True)
+
+        trashed_payload = dict(payload)
+        meta = trashed_payload.get("_meta") if isinstance(trashed_payload.get("_meta"), dict) else {}
+        trashed_meta = dict(meta)
+        trashed_meta["trashed_at"] = datetime.now(timezone.utc).isoformat()
+        if relative:
+            trashed_meta["original_relative_path"] = relative
+
+        source_relative = trashed_meta.get("source_file_relative")
+        if source_relative:
+            source_path = (root / Path(str(source_relative))).resolve()
+            if root.resolve() in source_path.parents and source_path.is_file():
+                target_source_path = _unique_path(trash_root / Path(str(source_relative)))
+                target_source_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(source_path), str(target_source_path))
+                trashed_meta["source_file_relative"] = str(target_source_path.relative_to(trash_root))
+
+        trashed_payload["_meta"] = trashed_meta
+        trash_json_path.write_text(
+            json.dumps(trashed_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+        if relative and not relative.startswith("db://"):
+            json_path = (root / Path(relative)).resolve()
+            if root.resolve() in json_path.parents and json_path.is_file():
+                json_path.unlink(missing_ok=True)
+    except Exception as exc:
+        return False, f"Mise en corbeille impossible: {exc}"
 
     try:
         db_path = cfg.extraction_history_db_path
@@ -201,27 +263,9 @@ def delete_history_entry(cfg: AppConfig, entry: dict[str, Any]) -> tuple[bool, s
                 row_id = entry.get("id")
                 if isinstance(row_id, int):
                     conn.execute("DELETE FROM extraction_history WHERE id = ?", (row_id,))
-                elif rel and not rel.startswith("db://"):
-                    conn.execute("DELETE FROM extraction_history WHERE relative_path = ?", (rel,))
+                elif relative and not relative.startswith("db://"):
+                    conn.execute("DELETE FROM extraction_history WHERE relative_path = ?", (relative,))
     except Exception as exc:
-        return False, f"Suppression DB impossible: {exc}"
+        return False, f"Mise a jour DB impossible apres corbeille: {exc}"
 
-    if rel and not rel.startswith("db://"):
-        try:
-            jp = (root / Path(rel)).resolve()
-            if root.resolve() in jp.parents and jp.is_file():
-                jp.unlink(missing_ok=True)
-        except Exception as exc:
-            return False, f"Suppression JSON impossible: {exc}"
-
-    meta = payload.get("_meta") if isinstance(payload, dict) else {}
-    src_rel = meta.get("source_file_relative") if isinstance(meta, dict) else None
-    if src_rel:
-        try:
-            sp = (root / Path(str(src_rel))).resolve()
-            if root.resolve() in sp.parents and sp.is_file():
-                sp.unlink(missing_ok=True)
-        except Exception:
-            pass
-
-    return True, "Extraction supprimée."
+    return True, "Document deplace vers la corbeille."

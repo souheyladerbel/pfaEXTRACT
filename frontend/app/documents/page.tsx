@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Search, X } from "lucide-react";
+import { Download, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { fetchHistory, fetchHistoryDetail, resolveApiUrl } from "@/lib/api";
+import { deleteHistoryEntry, fetchHistory, fetchHistoryDetail, resolveApiUrl } from "@/lib/api";
 import type { HistoryDetail, HistoryListPayload } from "@/lib/types";
 
 export default function DocumentsPage() {
@@ -191,6 +191,22 @@ export default function DocumentsPage() {
       "noopener,noreferrer"
     );
     setNotice("Le rapport PDF du document affiche a ete ouvert.");
+  };
+
+  const trashFocusedDocument = async () => {
+    if (!focusedEntryKey) {
+      setNotice("Clique d'abord sur un document pour afficher son detail.");
+      return;
+    }
+
+    try {
+      const response = await deleteHistoryEntry(focusedEntryKey);
+      setSelectedEntryKeys((current) => current.filter((entryKey) => entryKey !== focusedEntryKey));
+      closeDocumentDetail();
+      setNotice(response.message);
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Mise en corbeille impossible.");
+    }
   };
 
   return (
@@ -376,6 +392,10 @@ export default function DocumentsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Button variant="danger" className="gap-2" onClick={trashFocusedDocument}>
+                  <Trash2 className="h-4 w-4" />
+                  Mettre a la corbeille
+                </Button>
                 <Button variant="success" className="gap-2" onClick={exportFocusedDocument}>
                   <Download className="h-4 w-4" />
                   Exporter ce document
